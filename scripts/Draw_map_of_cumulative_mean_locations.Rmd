@@ -1,0 +1,85 @@
+---
+title: "Draw geographic map with cumulative mean locations"
+author: "Aaron M. Duffy"
+date: "May 2025"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+#library("ggplot2")
+#library("sf")
+#library("rnaturalearth")
+#library("rnaturalearthhires")
+
+now <- Sys.Date()
+options(max.print=999999)
+
+location_data_table <- "./Cumulative_mean_locations.csv"
+```
+
+Read in the data
+```{r, echo=FALSE}
+location_data <- read.csv(location_data_table, header=TRUE)
+summary(location_data)
+```
+
+
+
+North American map with Lambert Approximate Equal Area Projection.
+
+Blue crosses = individual locations
+Orange dots = cumulative  locations
+
+```{r, echo=FALSE, fig.height = 9}
+min_lon = -121 
+max_lon = -70 
+min_lat = 30 
+max_lat = 45 
+#mycrs = 4326
+#myepsg = "EPSG:4326"
+mycrs = 2163
+myepsg = "EPSG:2163"
+
+col_ocean = "gray60"
+col_land = "white"
+col_intborder = "gray80"
+col_graticule = "gray90"
+
+disp_window <- st_sfc(st_point(c(min_lon, min_lat)), st_point(c(max_lon, max_lat)), crs=4326)
+proj_disp_window <- st_coordinates(st_transform(disp_window, crs=mycrs))
+proj_location_data <- st_transform(st_as_sf(location_data, coords = c("Lon", "Lat"), crs = 4326), myepsg)
+proj_center_data <- st_transform(st_as_sf(location_data, coords = c("Cumulative_Lon", "Cumulative_Lat"), crs = 4326), myepsg)
+#northamerica <- st_transform(ne_countries(scale="medium", type="countries", continent=c("North America"), returnclass = "sf"), myepsg)
+northamerica <- st_transform(ne_states(country="united states of america", returnclass = "sf"), myepsg)
+graticules <- st_graticule(crs=mycrs, lon=c(-120, -105, -90, -75, -60), lat=c(20, 35, 50, 65))
+my_map <- ggplot() +
+  geom_sf(data=northamerica, color=col_intborder, fill=col_land, linewidth=0.1) +
+  #geom_sf(data=graticules, color=col_graticule, linewidth=0.01) +
+  geom_sf(data=proj_location_data, color="blue", size=2, alpha=1, pch=3) +
+  geom_sf(data=proj_center_data, aes(color=Count), size=1, alpha=1, pch=20) +
+  coord_sf(xlim = proj_disp_window[,'X'], ylim = proj_disp_window[, 'Y'], datum= mycrs, expand=FALSE, label_graticule="NW") +
+  #scale_color_manual(values=c("#000080", "red", "#804000")) +
+  scale_color_gradientn(colors = c("violet", "blue", "green", "yellow", "orange", "red")) +
+  #scale_fill_manual(values=c("gray5", "gray95")) +
+  #scale_shape_manual(values=c(1, 4, 2)) +
+  theme_classic() +
+  theme(panel.border = element_rect(color = "black", fill=NA, linewidth=1.5), panel.background = element_rect(color=col_ocean, fill=col_ocean)) +
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.line.x=element_blank(), axis.line.y=element_blank(), axis.text = element_blank(), axis.ticks=element_blank(), legend.position="none")
+ 
+output_name <- "Cumulative_means_map-LAEA"
+pdf(paste(output_name, "-", now, ".pdf", sep=""), height=6, width = 7.5)
+print(my_map)
+dev.off()
+```
+
+
+
+# Report metadata
+
+```{r, echo=FALSE}
+message(Sys.time())
+message(Sys.info()["nodename"])
+message(Sys.info()["user"])
+sessionInfo()
+```
