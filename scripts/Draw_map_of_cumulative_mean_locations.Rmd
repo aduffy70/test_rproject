@@ -6,16 +6,20 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE)
-#library("ggplot2")
-#library("sf")
-#library("rnaturalearth")
-#library("rnaturalearthhires")
+knitr::opts_chunk$set(echo = TRUE)
+library("ggplot2")
+library("fromhere")
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthhires")
 
 now <- Sys.Date()
 options(max.print=999999)
 
-location_data_table <- "./Cumulative_mean_locations.csv"
+location_data_table <- from_rproj("data/Cumulative_mean_locations.csv")
+output_mapfile <- from_rproj(paste("outputs/Cumulative_means_map-LAEA-", now, ".pdf", sep=""))
+knitr::opts_knit$set(root.dir = from_rproj('outputs/'))
+
 ```
 
 Read in the data
@@ -66,9 +70,9 @@ my_map <- ggplot() +
   theme_classic() +
   theme(panel.border = element_rect(color = "black", fill=NA, linewidth=1.5), panel.background = element_rect(color=col_ocean, fill=col_ocean)) +
   theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.line.x=element_blank(), axis.line.y=element_blank(), axis.text = element_blank(), axis.ticks=element_blank(), legend.position="none")
- 
-output_name <- "Cumulative_means_map-LAEA"
-pdf(paste(output_name, "-", now, ".pdf", sep=""), height=6, width = 7.5)
+print(my_map)
+graphics.off()
+pdf(output_mapfile, height=6, width = 7.5)
 print(my_map)
 dev.off()
 ```
